@@ -27,16 +27,47 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
       setValidationError("Please select an image file (PNG, JPG, JPEG).");
       return;
     }
-    if (file.size > 3 * 1024 * 1024) {
-      setValidationError("Please upload a photo smaller than 3MB.");
-      return;
-    }
     setPhotoName(file.name);
     setValidationError("");
 
     const reader = new FileReader();
-    reader.onloadend = () => {
-      setPhotoUrl(reader.result as string);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = () => {
+        // Create canvas for image downsampling/compression
+        const canvas = document.createElement("canvas");
+        
+        // Target high-quality web size for crisp photo cards (e.g. max 500x500 dimension)
+        const MAX_DIMENSION = 500;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > MAX_DIMENSION) {
+            height = Math.round((height * MAX_DIMENSION) / width);
+            width = MAX_DIMENSION;
+          }
+        } else {
+          if (height > MAX_DIMENSION) {
+            width = Math.round((width * MAX_DIMENSION) / height);
+            height = MAX_DIMENSION;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          // Export as compressed high-quality JPEG (usually ~20-50KB instead of 3MB+)
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", 0.82);
+          setPhotoUrl(compressedDataUrl);
+        } else {
+          setPhotoUrl(event.target?.result as string);
+        }
+      };
+      img.src = event.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
@@ -378,15 +409,17 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
                       onChange={handlePhotoChange}
                       className="hidden"
                     />
-                    <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-700 mb-2">
-                      <ImageIcon size={20} />
+                    <div className="pointer-events-none flex flex-col items-center justify-center">
+                      <div className="w-10 h-10 rounded-full bg-amber-50 flex items-center justify-center text-amber-700 mb-2">
+                        <ImageIcon size={20} />
+                      </div>
+                      <p className="text-xs font-semibold text-slate-800">
+                        Drag and drop your picture here, or <span className="text-amber-700 underline">browse</span>
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-1">
+                        Supports standard PNG, JPG, or JPEG pictures (automatically compressed)
+                      </p>
                     </div>
-                    <p className="text-xs font-semibold text-slate-800">
-                      Drag and drop your picture here, or <span className="text-amber-700 underline">browse</span>
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Supports JPG, JPEG, and PNG images up to 3MB
-                    </p>
                   </div>
                 )}
               </div>
