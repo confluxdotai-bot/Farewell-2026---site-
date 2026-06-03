@@ -6,6 +6,25 @@ interface OrganizerGateProps {
   onUnlock: () => void;
 }
 
+// Secure SHA-256 local verification fallback helper.
+// This prevents exposing plain-text passcodes in the frontend JS bundle for static hosts like Vercel.
+async function verifyPasscodeWithHash(pass: string): Promise<boolean> {
+  const normalized = pass.trim().toUpperCase();
+  const encoder = new TextEncoder();
+  const data = encoder.encode(normalized);
+  const hashBuffer = await crypto.subtle.digest("SHA-256", data);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray.map((b) => b.toString(16).padStart(2, "0")).join("");
+  
+  const validHashes = [
+    "a1dad69bc4a12188e798e14117acbf3a6696c2cfa0a77abbc42d316ddbd231bd", // CSE2026
+    "319d9aeb522afdb213243cfed4f259c1b793f9887ce0bd8a3899e537db733fce", // SAYONARA2026
+    "931188e8bfbe642214856af9f63bfb723f15d43c718c56209bdc70e14fe65862"  // GIMT2026
+  ];
+  
+  return validHashes.includes(hashHex);
+}
+
 export default function OrganizerGate({ onUnlock }: OrganizerGateProps) {
   const [passcode, setPasscode] = useState("");
   const [showPass, setShowPass] = useState(false);
@@ -18,24 +37,58 @@ export default function OrganizerGate({ onUnlock }: OrganizerGateProps) {
     setLoading(true);
 
     try {
-      const response = await fetch("/api/verify-passcode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ passcode }),
-      });
+      let isAuthorized = false;
+      let apiEndpointExists = true;
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          // Persist session authentication
-          sessionStorage.setItem("gimt_cse_organizer_unlocked", "true");
-          onUnlock();
+      try {
+        const response = await fetch("/api/verify-passcode", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ passcode }),
+        });
+
+        if (response.ok) {
+          const data = await response.json().catch(() => ({}));
+          if (data.success) {
+            isAuthorized = true;
+          } else {
+            setError("Incorrect passcode. Please check your credentials and try again.");
+            setLoading(false);
+            return;
+          }
+        } else if (response.status === 404) {
+          apiEndpointExists = false;
+        } else {
+          try {
+            const errData = await response.json();
+            setError(errData.error || "Incorrect passcode. Please check your credentials and try again.");
+          } catch {
+            setError("Incorrect passcode. Please check your credentials and try again.");
+          }
+          setLoading(false);
+          return;
+        }
+      } catch (fetchErr) {
+        console.warn("Backend verification endpoint unreachable, falling back to local cryptographic check.", fetchErr);
+        apiEndpointExists = false;
+      }
+
+      // If the API endpoint doesn't exist (e.g. static deploy on Vercel), fall back to checking helper hash
+      if (!apiEndpointExists) {
+        const clientVal = await verifyPasscodeWithHash(passcode);
+        if (clientVal) {
+          isAuthorized = true;
         } else {
           setError("Incorrect passcode. Please check your credentials and try again.");
+          setLoading(false);
+          return;
         }
-      } else {
-        const errData = await response.json().catch(() => ({}));
-        setError(errData.error || "Incorrect passcode. Please check your credentials and try again.");
+      }
+
+      if (isAuthorized) {
+        // Persist session authentication
+        sessionStorage.setItem("gimt_cse_organizer_unlocked", "true");
+        onUnlock();
       }
     } catch (err) {
       console.error("Passcode verification error:", err);
