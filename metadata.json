@@ -1,0 +1,6 @@
+{
+  "name": "CSE Seniors Farewell Portal",
+  "description": "A warm, nostalgic, and elegant farewell registration portal, invitation card generator, and memory wall for CSE seniors of Global Institute of Management and Technology.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

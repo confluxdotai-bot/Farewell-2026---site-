@@ -1,0 +1,37 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-serif: "Playfair Display", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  /* Premium Heritage / Soft Nostalgic Gold Palette */
+  --color-gold-50: #fdfcf9;
+  --color-gold-100: #f9f5e8;
+  --color-gold-200: #eee4c0;
+  --color-gold-300: #dfcb89;
+  --color-gold-400: #cbb052;
+  --color-gold-500: #b29334;
+  --color-gold-600: #937426;
+  --color-gold-700: #74581f;
+  --color-gold-800: #574116;
+}
+
+/* Base custom classes for high-end heritage visual styling */
+body {
+  font-family: var(--font-sans);
+  background-color: #fcfbf7;
+  color: #2b271d;
+}
+
+/* Custom gorgeous dotted certificate background card styling */
+.parchment-pattern {
+  background-color: #faf8f2;
+  background-image: 
+    radial-gradient(ellipse at center, rgba(253, 252, 249, 0.45) 0%, rgba(246, 242, 225, 0.8) 100%),
+    radial-gradient(#d5c39a 0.75px, transparent 0.75px), 
+    radial-gradient(#d5c39a 0.75px, #faf8f2 0.75px);
+  background-size: 100% 100%, 24px 24px, 24px 24px;
+  background-position: 0 0, 0 0, 12px 12px;
+}

@@ -1,0 +1,71 @@
+{
+  "entities": {
+    "Registration": {
+      "title": "Registration",
+      "description": "Details of a senior student registering for the farewell ceremony, including memory inputs.",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the registration"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the senior student"
+        },
+        "email": {
+          "type": "string",
+          "description": "Email address of the senior student"
+        },
+        "department": {
+          "type": "string",
+          "description": "Academic department, pre-set to CSE"
+        },
+        "college": {
+          "type": "string",
+          "description": "College name, pre-set to Global Institute of Management and Technology"
+        },
+        "batch": {
+          "type": "string",
+          "description": "The senior's graduating batch, e.g., 2022-2026"
+        },
+        "vibe": {
+          "type": "string",
+          "description": "The senior's personality archtype or vibe, e.g. Tech Geek"
+        },
+        "favoriteMemory": {
+          "type": "string",
+          "description": "The senior's favorite college memory or confession"
+        },
+        "futureAspirations": {
+          "type": "string",
+          "description": "The senior's dream or future career goals"
+        },
+        "messageToJuniors": {
+          "type": "string",
+          "description": "A heart-warming parting message to junior students"
+        },
+        "farewellMessage": {
+          "type": "string",
+          "description": "A personalized goodbye message automatically crafted by Gemini AI"
+        },
+        "avatarColor": {
+          "type": "string",
+          "description": "Custom color/accent selected for the card styling"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when registration happened"
+        }
+      },
+      "required": ["id", "name", "batch", "vibe", "favoriteMemory"]
+    }
+  },
+  "firestore": {
+    "registrations/{registrationId}": {
+      "schema": "Registration",
+      "description": "Registrations of the graduating seniors."
+    }
+  }
+}
