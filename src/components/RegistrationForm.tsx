@@ -166,17 +166,17 @@ export default function RegistrationForm({ onSuccess }: RegistrationFormProps) {
   return (
     <div className="w-full max-w-2xl bg-white rounded-2xl border border-gold-200 shadow-xl overflow-hidden relative">
       {/* Sayonara 2026 Cozy Themed Top Banner section */}
-      <div className="relative bg-gradient-to-r from-amber-800 to-amber-970 px-6 py-8 text-white text-center">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-[radial-gradient(circle,rgba(251,191,36,0.1)_1px,transparent_1px)] bg-[size:10px_10px] opacity-30" />
+      <div className="relative bg-[#3b2314] bg-gradient-to-r from-amber-950 via-amber-900 to-amber-950 border-b border-amber-700/30 px-6 py-8 text-white text-center">
+        <div className="absolute top-0 right-0 w-32 h-32 bg-[radial-gradient(circle,rgba(251,191,36,0.15)_1px,transparent_1px)] bg-[size:10px_10px] opacity-40" />
         <div className="flex flex-col items-center justify-center gap-2">
-          <GraduationCap size={48} className="text-amber-300 stroke-[1.5] animate-bounce" />
-          <span className="text-[10px] uppercase font-mono tracking-widest text-amber-200 font-bold bg-amber-950/60 px-3 py-1 rounded-full">
+          <GraduationCap size={48} className="text-amber-400 stroke-[1.5] animate-bounce" />
+          <span className="text-[11px] uppercase font-mono tracking-wider text-amber-200 font-extrabold bg-amber-950 px-3 py-1.5 rounded-full border border-amber-500/25">
             Global Institute of Management and Technology
           </span>
-          <h2 className="font-serif text-3xl md:text-4xl font-extrabold tracking-tight mt-1 text-gold-100">
+          <h2 className="font-serif text-3xl md:text-4xl font-extrabold tracking-tight mt-1 text-white drop-shadow-md">
             Sayonara 2026
           </h2>
-          <p className="text-amber-150/90 text-xs mt-1 font-serif italic max-w-md">
+          <p className="text-amber-100 font-medium text-xs mt-2 font-serif italic max-w-md leading-relaxed px-1">
             CSE Seniors, submit your entry below to register your seat and instantly generate your royal valediction invitation card!
           </p>
         </div>

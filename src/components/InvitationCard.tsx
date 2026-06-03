@@ -276,7 +276,7 @@ export default function InvitationCard({ registration }: InvitationCardProps) {
             <div className="flex flex-col md:flex-row items-center md:items-start justify-between gap-6 w-full text-center md:text-left">
               {/* Left Side: Invitation message */}
               <div className="flex-1 space-y-4">
-                <p className="text-xs font-serif italic text-amber-850">
+                <p className="text-xs font-serif italic text-amber-800 font-bold">
                   This honorary invitation is cordially extended to our senior,
                 </p>
 

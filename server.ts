@@ -196,6 +196,35 @@ Write a highly warm, welcoming, and encouraging invitation message (1 to 2 sente
   }
 });
 
+// API endpoint to delete registration
+app.delete("/api/registrations/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // 1. Delete from local database file
+    const rawData = fs.readFileSync(REGISTRATIONS_FILE, "utf-8");
+    const list = JSON.parse(rawData);
+    const updatedList = list.filter((reg: any) => reg.id !== id);
+    fs.writeFileSync(REGISTRATIONS_FILE, JSON.stringify(updatedList, null, 2));
+
+    // 2. Delete from Firebase Firestore if active
+    const fireStoreDb = await initFirebase();
+    if (fireStoreDb) {
+      try {
+        const { doc, deleteDoc } = await import("firebase/firestore");
+        await deleteDoc(doc(fireStoreDb, "registrations", id));
+        console.log(`Deleted registration ${id} from Firestore backend.`);
+      } catch (fbError) {
+        console.warn("Could not sync delete to Firestore database.", fbError);
+      }
+    }
+
+    res.json({ success: true, id });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete registration", details: String(error) });
+  }
+});
+
 // Configure Vite middleware and SPA routing
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {

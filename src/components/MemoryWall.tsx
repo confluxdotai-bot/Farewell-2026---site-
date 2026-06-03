@@ -1,14 +1,21 @@
 import { useState } from "react";
-import { Search, Heart, Sparkles, Filter, FileSpreadsheet, Eye, User, Calendar, Phone } from "lucide-react";
+import { Search, Heart, Sparkles, Filter, FileSpreadsheet, Eye, User, Calendar, Phone, Trash2 } from "lucide-react";
 import { Registration } from "../types";
 import { motion, AnimatePresence } from "motion/react";
 
 interface MemoryWallProps {
   registrations: Registration[];
   onSelectRegistration: (reg: Registration) => void;
+  isOrganizerUnlocked?: boolean;
+  onDeleteRegistration?: (id: string) => void;
 }
 
-export default function MemoryWall({ registrations, onSelectRegistration }: MemoryWallProps) {
+export default function MemoryWall({ 
+  registrations, 
+  onSelectRegistration,
+  isOrganizerUnlocked = false,
+  onDeleteRegistration
+}: MemoryWallProps) {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedBatch, setSelectedBatch] = useState("all");
 
@@ -223,14 +230,29 @@ export default function MemoryWall({ registrations, onSelectRegistration }: Memo
                         RSVP Confirmed
                       </span>
 
-                      {/* View Invitation card button */}
-                      <button
-                        onClick={() => onSelectRegistration(reg)}
-                        className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-lg text-[9px] font-bold uppercase transition-all tracking-wider flex items-center gap-1 cursor-pointer"
-                      >
-                        <Eye size={11} />
-                        View Invitation Card
-                      </button>
+                      <div className="flex items-center gap-2">
+                        {isOrganizerUnlocked && onDeleteRegistration && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onDeleteRegistration(reg.id);
+                            }}
+                            className="p-1.5 bg-red-50 hover:bg-red-100 text-red-650 hover:text-red-700 rounded-lg border border-red-200 transition-all cursor-pointer flex items-center justify-center animate-fade-in"
+                            title="Delete RSVP Entry"
+                          >
+                            <Trash2 size={12} className="stroke-[2.5]" />
+                          </button>
+                        )}
+
+                        {/* View Invitation card button */}
+                        <button
+                          onClick={() => onSelectRegistration(reg)}
+                          className="px-3 py-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-200 text-amber-900 rounded-lg text-[9px] font-bold uppercase transition-all tracking-wider flex items-center gap-1 cursor-pointer"
+                        >
+                          <Eye size={11} />
+                          View Invitation Card
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </motion.div>

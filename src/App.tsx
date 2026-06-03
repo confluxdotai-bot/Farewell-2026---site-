@@ -15,6 +15,7 @@ import { Registration } from "./types";
 import RegistrationForm from "./components/RegistrationForm";
 import InvitationCard from "./components/InvitationCard";
 import MemoryWall from "./components/MemoryWall";
+import OrganizerGate from "./components/OrganizerGate";
 import { motion, AnimatePresence } from "motion/react";
 
 export default function App() {
@@ -26,6 +27,15 @@ export default function App() {
   const [latestRegistration, setLatestRegistration] = useState<Registration | null>(null);
   const [selectedRegForCard, setSelectedRegForCard] = useState<Registration | null>(null);
   const [sysStatus, setSysStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [isOrganizerUnlocked, setIsOrganizerUnlocked] = useState(false);
+
+  // Read session persistent credential on launch
+  useEffect(() => {
+    const isUnlocked = sessionStorage.getItem("gimt_cse_organizer_unlocked") === "true";
+    if (isUnlocked) {
+      setIsOrganizerUnlocked(true);
+    }
+  }, []);
 
   // Fetch all registrations from the full-stack server
   const fetchRegistrations = async () => {
@@ -58,62 +68,7 @@ export default function App() {
         }
       }
       
-      // Let's seed preloaded sample invitations so the user gets to see beautiful cards immediately on Vercel deployment!
-      const sampleSeeds: Registration[] = [
-        {
-          id: "seed_1",
-          name: "Shoubhik Majumdar",
-          email: "11shoubhikmajumdar@gmail.com",
-          phone: "+91 90070 12345",
-          mustCome: true,
-          department: "CSE",
-          college: "Global Institute of Management and Technology",
-          batch: "2022-2026",
-          vibe: "The Code Wizard",
-          favoriteMemory: "Cracking final year project algorithms with team elements till early morning.",
-          futureAspirations: "",
-          messageToJuniors: "",
-          farewellMessage: "To Shoubhik, your guidance in machine learning has inspired the entire department. GIMT CSE juniors are proud of you and look forward to welcoming you to Sayonara 2.0!",
-          avatarColor: "rose",
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: "seed_2",
-          name: "Debolina Sen",
-          email: "debolina.cse@gimt.ac.in",
-          phone: "+91 87654 32109",
-          mustCome: true,
-          department: "CSE",
-          college: "Global Institute of Management and Technology",
-          batch: "2022-2026",
-          vibe: "The Creative Stylist",
-          favoriteMemory: "Organizing the tech fest web exhibition and painting beautiful frontends.",
-          futureAspirations: "",
-          messageToJuniors: "",
-          farewellMessage: "Dear Debolina, you have brought color and unmatched UI elegance to the department's web layouts. We wait to honor your vibrant presence at Sayonara 2.0!",
-          avatarColor: "emerald",
-          createdAt: new Date().toISOString()
-        },
-        {
-          id: "seed_3",
-          name: "Aman Gupta",
-          email: "aman.gimt.cse@gmail.com",
-          phone: "+91 76543 21098",
-          mustCome: true,
-          department: "CSE",
-          college: "Global Institute of Management and Technology",
-          batch: "2023-2026",
-          vibe: "The Department Icon",
-          favoriteMemory: "Waking up the whole hostel at midnight to celebrate semester exam clearances.",
-          futureAspirations: "",
-          messageToJuniors: "",
-          farewellMessage: "Dear Aman, our fests and events would have been dull without your exceptional voice and support. Celebrate your graduation journey gloriously with us at Sayonara 2.0!",
-          avatarColor: "blue",
-          createdAt: new Date().toISOString()
-        }
-      ];
-      setRegistrations(sampleSeeds);
-      localStorage.setItem("gimt_cse_farewell_manifest", JSON.stringify(sampleSeeds));
+      setRegistrations([]);
     } finally {
       setSysStatus("ready");
     }
@@ -134,6 +89,53 @@ export default function App() {
     // Save state cache
     const updated = [newReg, ...registrations];
     localStorage.setItem("gimt_cse_farewell_manifest", JSON.stringify(updated));
+  };
+
+  // Delete registration (Organizer action)
+  const handleDeleteRegistration = async (id: string) => {
+    const confirmation = window.confirm("Are you sure you want to permanently delete this registration? This action cannot be undone.");
+    if (!confirmation) return;
+
+    try {
+      const response = await fetch(`/api/registrations/${id}`, {
+        method: "DELETE",
+      });
+      if (response.ok) {
+        // Remove locally from state
+        setRegistrations((prev) => prev.filter((r) => r.id !== id));
+        // Remove from local storage cache
+        const cached = localStorage.getItem("gimt_cse_farewell_manifest");
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached);
+            if (Array.isArray(parsed)) {
+              const updated = parsed.filter((r: any) => r.id !== id);
+              localStorage.setItem("gimt_cse_farewell_manifest", JSON.stringify(updated));
+            }
+          } catch (e) {
+            console.error("Failed to update cache on delete", e);
+          }
+        }
+      } else {
+        throw new Error("API responded with an error");
+      }
+    } catch (err) {
+      console.warn("Delete request failed on backend. Removing from local state and cache directly.", err);
+      // Direct client fallback
+      setRegistrations((prev) => prev.filter((r) => r.id !== id));
+      const cached = localStorage.getItem("gimt_cse_farewell_manifest");
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed)) {
+            const updated = parsed.filter((r: any) => r.id !== id);
+            localStorage.setItem("gimt_cse_farewell_manifest", JSON.stringify(updated));
+          }
+        } catch (e) {
+          console.error("Failed to update cache during offline delete", e);
+        }
+      }
+    }
   };
 
   // Back to registry controller button
@@ -292,9 +294,11 @@ export default function App() {
                   <RegistrationForm onSuccess={handleRegistrationSuccess} />
                 </div>
               ) : (
-                <div>
-                  {sysStatus === "loading" ? (
-                    <div className="text-center p-12">
+                <div className="flex justify-center w-full">
+                  {!isOrganizerUnlocked ? (
+                    <OrganizerGate onUnlock={() => setIsOrganizerUnlocked(true)} />
+                  ) : sysStatus === "loading" ? (
+                    <div className="text-center p-12 w-full">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gold-600 mx-auto" />
                       <p className="text-xs text-slate-400 font-mono mt-3">SYNCHRONIZING FAREWELL REGISTRIES...</p>
                     </div>
@@ -302,6 +306,8 @@ export default function App() {
                     <MemoryWall 
                       registrations={registrations} 
                       onSelectRegistration={(selected) => setSelectedRegForCard(selected)} 
+                      isOrganizerUnlocked={isOrganizerUnlocked}
+                      onDeleteRegistration={handleDeleteRegistration}
                     />
                   )}
                 </div>
@@ -313,7 +319,7 @@ export default function App() {
       </main>
 
       {/* Decorative Traditional Bottom Margin Sign-off */}
-      <footer className="border-t border-gold-120/10 py-6 mt-16 bg-white/40 text-center px-4">
+      <footer className="border-t border-gold-200/40 py-6 mt-16 bg-white/40 text-center px-4">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
             <p className="font-serif italic font-semibold text-slate-700">
