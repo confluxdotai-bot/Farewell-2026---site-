@@ -17,6 +17,8 @@ import InvitationCard from "./components/InvitationCard";
 import MemoryWall from "./components/MemoryWall";
 import OrganizerGate from "./components/OrganizerGate";
 import { motion, AnimatePresence } from "motion/react";
+import { collection, onSnapshot, query, orderBy, doc, deleteDoc, setDoc } from "firebase/firestore";
+import { db } from "./firebase";
 
 export default function App() {
   // Navigation tabs
@@ -74,21 +76,58 @@ export default function App() {
     }
   };
 
+  // Real-time Firestore sync
   useEffect(() => {
-    fetchRegistrations();
+    if (db) {
+      setSysStatus("loading");
+      try {
+        const q = query(collection(db, "registrations"), orderBy("createdAt", "desc"));
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+          const list: Registration[] = [];
+          snapshot.forEach((docSnap) => {
+            list.push({ id: docSnap.id, ...docSnap.data() } as Registration);
+          });
+          setRegistrations(list);
+          setSysStatus("ready");
+          localStorage.setItem("gimt_cse_farewell_manifest", JSON.stringify(list));
+        }, (error) => {
+          console.error("Firestore real-time snapshot error. Falling back to API polling...", error);
+          fetchRegistrations();
+        });
+        return () => unsubscribe();
+      } catch (err) {
+        console.warn("Could not start real-time Firestore sync. Falling back to API polling...", err);
+        fetchRegistrations();
+      }
+    } else {
+      fetchRegistrations();
+    }
   }, []);
 
   // Handle successful form submit registration
-  const handleRegistrationSuccess = (newReg: Registration) => {
+  const handleRegistrationSuccess = async (newReg: Registration) => {
     setLatestRegistration(newReg);
-    setRegistrations((prev) => [newReg, ...prev]);
+    setRegistrations((prev) => {
+      if (prev.some((r) => r.id === newReg.id)) return prev;
+      return [newReg, ...prev];
+    });
     
     // Automatically trigger visual display card right away
     setSelectedRegForCard(newReg);
     
     // Save state cache
-    const updated = [newReg, ...registrations];
+    const updated = [newReg, ...registrations.filter((r) => r.id !== newReg.id)];
     localStorage.setItem("gimt_cse_farewell_manifest", JSON.stringify(updated));
+
+    // Direct Firestore sync safeguard on the client side
+    if (db) {
+      try {
+        await setDoc(doc(db, "registrations", newReg.id), newReg);
+        console.log("Direct client-side Firestore sync: successfully saved registration!");
+      } catch (e) {
+        console.error("Direct client-side Firestore sync failed:", e);
+      }
+    }
   };
 
   // Delete registration (Organizer action)
@@ -122,6 +161,13 @@ export default function App() {
     } catch (err) {
       console.warn("Delete request failed on backend. Removing from local state and cache directly.", err);
       // Direct client fallback
+      if (db) {
+        try {
+          await deleteDoc(doc(db, "registrations", id));
+        } catch (e) {
+          console.error("Failed direct Firestore delete", e);
+        }
+      }
       setRegistrations((prev) => prev.filter((r) => r.id !== id));
       const cached = localStorage.getItem("gimt_cse_farewell_manifest");
       if (cached) {
@@ -143,7 +189,9 @@ export default function App() {
     setLatestRegistration(null);
     setSelectedRegForCard(null);
     setActiveTab("wall"); // Automatically show senior on memory wall after completion
-    fetchRegistrations();
+    if (!db) {
+      fetchRegistrations();
+    }
   };
 
   return (

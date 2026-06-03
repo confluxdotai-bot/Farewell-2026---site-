@@ -12,22 +12,36 @@ export default function OrganizerGate({ onUnlock }: OrganizerGateProps) {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e: FormEvent) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError("");
+    setLoading(true);
 
-    const normalized = passcode.trim().toUpperCase();
-    // Valid organizer passcodes: CSE2026 or SAYONARA2026
-    if (normalized === "CSE2026" || normalized === "SAYONARA2026" || normalized === "GIMT2026") {
-      setLoading(true);
-      setTimeout(() => {
-        setLoading(false);
-        // Persist session authentication
-        sessionStorage.setItem("gimt_cse_organizer_unlocked", "true");
-        onUnlock();
-      }, 800);
-    } else {
-      setError("Incorrect passcode. Please check your credentials and try again.");
+    try {
+      const response = await fetch("/api/verify-passcode", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ passcode }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success) {
+          // Persist session authentication
+          sessionStorage.setItem("gimt_cse_organizer_unlocked", "true");
+          onUnlock();
+        } else {
+          setError("Incorrect passcode. Please check your credentials and try again.");
+        }
+      } else {
+        const errData = await response.json().catch(() => ({}));
+        setError(errData.error || "Incorrect passcode. Please check your credentials and try again.");
+      }
+    } catch (err) {
+      console.error("Passcode verification error:", err);
+      setError("Unable to reach security verification server. Please retry in a moment.");
+    } finally {
+      setLoading(false);
     }
   };
 

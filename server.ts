@@ -225,6 +225,23 @@ app.delete("/api/registrations/:id", async (req, res) => {
   }
 });
 
+// API endpoint to securely verify organizer passcode on backend
+app.post("/api/verify-passcode", (req, res) => {
+  try {
+    const { passcode } = req.body;
+    if (!passcode) {
+      return res.status(400).json({ error: "Passcode is required." });
+    }
+    const normalized = passcode.trim().toUpperCase();
+    if (normalized === "CSE2026" || normalized === "SAYONARA2026" || normalized === "GIMT2026") {
+      return res.json({ success: true });
+    }
+    return res.status(401).json({ success: false, error: "Incorrect passcode." });
+  } catch (error) {
+    res.status(500).json({ error: "Server error during verification." });
+  }
+});
+
 // Configure Vite middleware and SPA routing
 async function startServer() {
   if (process.env.NODE_ENV !== "production") {
